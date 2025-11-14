@@ -4,7 +4,7 @@ open class Producto( //clase padre
     open val id: Int,
     open val nombre: String,
     open val precio: Double,
-    open val cantidad: Int
+    open var cantidad: Int
 ) {
     open fun mostrarDetalles(): String {
         return "$nombre - $$precio"

@@ -1,6 +1,5 @@
 package com.tuempresa.Vanta.model
 import java.util.Date
-// ...
 
 open class Boleta(
     val id: Int,

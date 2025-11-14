@@ -22,7 +22,6 @@ import com.tuempresa.Vanta.model.Ropa
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    // 1. LISTA DE PRODUCTOS (TIENDA)
     val listaProductos = mutableStateListOf<Producto>(
         Electronico(1, "Audífonos Sony", 45000.0, 10, "Sony"),
         Electronico(2, "Mouse Gamer", 25000.0, 5, "Logitech"),
@@ -41,7 +40,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         Electronico(15, "Cámara GoPro Hero", 250000.0, 3, "GoPro")
     )
 
-    // 2. BUSCADOR
     var textoBusqueda = MutableStateFlow("")
 
     fun actualizarBusqueda(nuevoTexto: String) {
@@ -67,7 +65,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun comprarProducto(producto: Producto) {
-        // Validación básica de stock (opcional)
         if (producto.cantidad > 0) {
             carritoCompras.add(producto)
         }
@@ -202,5 +199,91 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun cambiarRol(nuevoRol: String) {
         tipoUsuarioActual.value = nuevoRol
+    }
+
+    fun aumentarStock(producto: Producto) {
+        val index = listaProductos.indexOf(producto)
+        if (index != -1) {
+            listaProductos[index] = listaProductos[index].apply { cantidad += 1 }
+        }
+    }
+
+    private val listaClientesRegistrados = mutableListOf<com.tuempresa.Vanta.model.Cliente>()
+
+    var mensajeRegistro = MutableStateFlow("")
+
+
+    fun validarRut(rut: String): Boolean {
+        val regex = Regex("^[0-9]{7,8}-[0-9kK]{1}$")
+        return regex.matches(rut)
+    }
+
+    fun validarCorreo(correo: String): Boolean {
+        return correo.endsWith("@gmail.com") || correo.endsWith("@duocuc.cl")
+    }
+
+    fun validarUsername(username: String): Boolean {
+        return username.isNotBlank() && !username.contains(" ")
+    }
+
+    fun validarContrasena(contrasena: String): Boolean {
+        return contrasena.length >= 6
+    }
+
+    fun camposCompletos(vararg campos: String): Boolean {
+        return campos.all { it.isNotBlank() }
+    }
+
+    fun registrarCliente(
+        rut: String,
+        nombre: String,
+        apellido: String,
+        correo: String,
+        contrasena: String,
+        username: String,
+        direccion: String
+    ): Boolean {
+
+        if (!camposCompletos(rut, nombre, apellido, correo, contrasena, username, direccion)) {
+            mensajeRegistro.value = "Todos los campos son obligatorios"
+            return false
+        }
+
+        if (!validarRut(rut)) {
+            mensajeRegistro.value = "RUT inválido (ej: 12345678-9)"
+            return false
+        }
+
+        if (!validarCorreo(correo)) {
+            mensajeRegistro.value = "Correo debe ser @gmail.com o @duocuc.cl"
+            return false
+        }
+
+        if (!validarUsername(username)) {
+            mensajeRegistro.value = "Username no puede tener espacios"
+            return false
+        }
+
+        if (!validarContrasena(contrasena)) {
+            mensajeRegistro.value = "Contraseña muy corta (min 6)"
+            return false
+        }
+
+        if (listaClientesRegistrados.any { it.rut == rut }) {
+            mensajeRegistro.value = "Ya existe un cliente con ese RUT"
+            return false
+        }
+
+        if (listaClientesRegistrados.any { it.username == username }) {
+            mensajeRegistro.value = "El username ya está ocupado"
+            return false
+        }
+        val nuevoCliente = com.tuempresa.Vanta.model.Cliente(
+            rut, nombre, apellido, correo, contrasena, username, direccion
+        )
+        listaClientesRegistrados.add(nuevoCliente)
+
+        mensajeRegistro.value = "Registro exitoso: ${nuevoCliente.nombre}"
+        return true
     }
 }

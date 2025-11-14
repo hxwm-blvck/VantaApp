@@ -9,12 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.tuempresa.Vanta.ui.screens.MainScreen // Asegúrate de importar esto
-import com.tuempresa.Vanta.ui.theme.VantaTheme // Importamos TU tema nuevo
+import com.tuempresa.Vanta.ui.screens.MainScreen
+import com.tuempresa.Vanta.ui.theme.VantaTheme
 import com.tuempresa.Vanta.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
-    // Instanciar ViewModel
+
     private val viewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,7 +22,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             VantaTheme {
-                // Surface contenedor base que usa el color de fondo del tema
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

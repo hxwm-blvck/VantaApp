@@ -7,9 +7,12 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,9 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.tuempresa.Vanta.viewmodel.MainViewModel
 import com.tuempresa.Vanta.ui.componentes.CameraPreview
-import com.tuempresa.Vanta.model.Producto
-import androidx.compose.foundation.background
-
+import com.tuempresa.Vanta.model.*
 fun getBluetoothConnectPermission(): String {
     return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
         Manifest.permission.BLUETOOTH_CONNECT
@@ -80,8 +81,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 CenterAlignedTopAppBar(
                     title = { Text("Vanta", fontWeight = FontWeight.Bold) },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background, // Ahora será NEGRA
-                        titleContentColor = MaterialTheme.colorScheme.primary  // El título será ROSADO
+                        containerColor = MaterialTheme.colorScheme.background,
+                        titleContentColor = MaterialTheme.colorScheme.primary
                     ),
                     actions = {
                         Image(
@@ -167,14 +168,14 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Surface(
-                                                color = MaterialTheme.colorScheme.background, // Fondo negro para el icono
+                                                color = MaterialTheme.colorScheme.background,
                                                 modifier = Modifier.size(50.dp)
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         imageVector = Icons.Default.ShoppingCart,
                                                         contentDescription = null,
-                                                        tint = MaterialTheme.colorScheme.primary // Rosado Neón
+                                                        tint = MaterialTheme.colorScheme.primary
                                                     )
                                                 }
                                             }
@@ -185,20 +186,20 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                                                 Text(
                                                     text = producto.nombre,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = Color.White, // Texto blanco resalta en gris oscuro
+                                                    color = Color.White,
                                                     style = MaterialTheme.typography.titleMedium
                                                 )
                                                 Spacer(modifier = Modifier.height(4.dp))
                                                 Text(
                                                     text = producto.mostrarDetalles(),
                                                     style = MaterialTheme.typography.bodySmall,
-                                                    color = Color.Gray // Descripción en gris para jerarquía
+                                                    color = Color.Gray
                                                 )
                                             }
 
                                             Text(
                                                 text = "$${producto.precio.toInt()}",
-                                                color = MaterialTheme.colorScheme.primary, // Precio Rosado
+                                                color = MaterialTheme.colorScheme.primary,
                                                 fontWeight = FontWeight.ExtraBold,
                                                 style = MaterialTheme.typography.titleMedium
                                             )
@@ -211,12 +212,37 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         if (mostrarDetalle && productoSeleccionado != null) {
                             AlertDialog(
                                 onDismissRequest = { mostrarDetalle = false },
-                                title = { Text(productoSeleccionado!!.nombre) },
+
+                                containerColor = Color(0xFF1E1E1E),
+                                titleContentColor = Color.White,
+                                textContentColor = Color.White,
+
+                                title = { Text(productoSeleccionado!!.nombre, fontWeight = FontWeight.Bold) },
                                 text = {
                                     Column {
                                         Text("Precio: $${productoSeleccionado!!.precio.toInt()}")
-                                        Text("Stock: ${productoSeleccionado!!.cantidad}", fontWeight = FontWeight.Bold)
-                                        Text(productoSeleccionado!!.mostrarDetalles())
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text("Detalle: ${productoSeleccionado!!.mostrarDetalles()}")
+                                        Spacer(modifier = Modifier.height(16.dp))
+
+                                        Text(
+                                            text = "Stock Disponible: ${productoSeleccionado!!.cantidad}",
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                        )
+
+                                        val rolActual by viewModel.tipoUsuarioActual.collectAsState()
+
+                                        if (rolActual == "Administrador" || rolActual == "Supervisor") {
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            Button(
+                                                onClick = { viewModel.aumentarStock(productoSeleccionado!!) },
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                                            ) {
+                                                Icon(Icons.Default.Add, contentDescription = null)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Reponer Stock (+1)")
+                                            }
+                                        }
                                     }
                                 },
                                 confirmButton = {
@@ -224,9 +250,13 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                                         viewModel.comprarProducto(productoSeleccionado!!)
                                         mostrarDetalle = false
                                         Toast.makeText(context, "Agregado al carrito", Toast.LENGTH_SHORT).show()
-                                    }) { Text("Agregar") }
+                                    }) { Text("Agregar al Carrito") }
                                 },
-                                dismissButton = { TextButton(onClick = { mostrarDetalle = false }) { Text("Cerrar") } }
+                                dismissButton = {
+                                    TextButton(onClick = { mostrarDetalle = false }) {
+                                        Text("Cerrar", color = Color.LightGray)
+                                    }
+                                }
                             )
                         }
                     }
@@ -263,7 +293,6 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                                                     Text(prod.nombre, fontWeight = FontWeight.Bold)
                                                     Text("$${prod.precio.toInt()}")
                                                 }
-                                                // Botón para borrar item
                                                 IconButton(onClick = { viewModel.borrarDelCarrito(prod) }) {
                                                     Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = Color.Red)
                                                 }
@@ -295,7 +324,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 
                         if (boletaTexto != null) {
                             AlertDialog(
-                                onDismissRequest = { viewModel.boletaGenerada.value = null }, // Cerrar manual
+                                onDismissRequest = { viewModel.boletaGenerada.value = null },
                                 title = { Text("Compra Exitosa") },
                                 text = {
                                     Box(modifier = Modifier.heightIn(max = 400.dp)) {
@@ -310,6 +339,8 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                     }
 
                     2 -> {
+                        val rolActual by viewModel.tipoUsuarioActual.collectAsState()
+
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -319,40 +350,55 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         ) {
                             item {
                                 Text(
-                                    "Sensores",
+                                    "Panel de Sensores",
                                     style = MaterialTheme.typography.headlineMedium,
                                     color = Color.Black
                                 )
-
-                                Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
-                                    Text("Permiso Cámara")
-                                }
-                                CameraPreview(onPhotoCaptured = { viewModel.setPhotoUri(it) })
-                                photoUri?.let {
-                                    AsyncImage(model = it, contentDescription = null, modifier = Modifier.height(200.dp))
-                                }
-                            }
-                            item {
-                                Button(onClick = { locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION); viewModel.startLocationUpdates() }) {
-                                    Text("Obtener ubicación")
-                                }
-                                location?.let {
-                                    Text(
-                                        "Lat: ${it.latitude}, Lon: ${it.longitude}",
-                                        color = Color.Black
-                                    )
-                                }
-                            }
-                            item {
-                                Button(onClick = { bluetoothScanLauncher.launch(Manifest.permission.BLUETOOTH_SCAN); viewModel.startBluetoothDiscovery() }) {
-                                    Text("Buscar dispositivos Bluetooth")
-                                }
-                            }
-                            items(bluetoothDevices) { device ->
                                 Text(
-                                    device.name ?: device.address,
-                                    color = Color.Black
+                                    "Rol: $rolActual",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            if (rolActual == "Administrador" || rolActual == "Supervisor") {
+                                item {
+                                    Text("Cámara", style = MaterialTheme.typography.titleLarge, color = Color.Black)
+                                    Button(onClick = { cameraPermissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                                        Text("Escanear")
+                                    }
+                                    CameraPreview(onPhotoCaptured = { viewModel.setPhotoUri(it) })
+                                    photoUri?.let { AsyncImage(model = it, contentDescription = null, modifier = Modifier.height(200.dp)) }
+                                    Divider()
+                                }
+                            }
+
+                            if (rolActual != "Cliente") {
+                                item {
+                                    Text("GPS", style = MaterialTheme.typography.titleLarge, color = Color.Black)
+                                    Button(onClick = { locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION); viewModel.startLocationUpdates() }) {
+                                        Text("Obtener Ubicación")
+                                    }
+                                    location?.let { Text("Lat: ${it.latitude}, Lon: ${it.longitude}", color = Color.Black) }
+                                    Divider()
+                                }
+                            }
+
+                            if (rolActual == "Repartidor") {
+                                item {
+                                    Text("Bluetooth", style = MaterialTheme.typography.titleLarge, color = Color.Black)
+                                    Button(onClick = { bluetoothScanLauncher.launch(Manifest.permission.BLUETOOTH_SCAN); viewModel.startBluetoothDiscovery() }) {
+                                        Text("Conectar Máquina")
+                                    }
+                                    Text("Escaneando dispositivos cercanos...", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+
+                            if (rolActual == "Cliente") {
+                                item {
+                                    Text("Acceso restringido a sensores.", color = Color.Gray)
+                                }
                             }
                         }
                     }
@@ -374,6 +420,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(onClick = { viewModel.cambiarRol("Administrador") }) { Text("Admin") }
                                 Button(onClick = { viewModel.cambiarRol("Cliente") }) { Text("Cliente") }
+                                Button(onClick = { viewModel.cambiarRol("Repartidor") }) { Text("Repartidor") }
                             }
 
                             Spacer(modifier = Modifier.height(32.dp))
@@ -397,7 +444,10 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
 }
 
 @Composable
-fun PantallaRegistro(onRegistroCompletado: () -> Unit, onCancelar: () -> Unit) {
+fun PantallaRegistro(
+    onRegistroCompletado: () -> Unit,
+    onCancelar: () -> Unit
+) {
     var rut by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
@@ -406,11 +456,14 @@ fun PantallaRegistro(onRegistroCompletado: () -> Unit, onCancelar: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
 
+    var mensajeError by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -418,21 +471,21 @@ fun PantallaRegistro(onRegistroCompletado: () -> Unit, onCancelar: () -> Unit) {
             "Registro de Cliente",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary // Título en Rosado para destacar
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        OutlinedTextField(value = rut, onValueChange = { rut = it }, label = { Text("RUT") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = rut, onValueChange = { rut = it }, label = { Text("RUT") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(value = apellido, onValueChange = { apellido = it }, label = { Text("Apellido") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = apellido, onValueChange = { apellido = it }, label = { Text("Apellido") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(value = correo, onValueChange = { correo = it }, label = { Text("Correo") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = correo, onValueChange = { correo = it }, label = { Text("Correo") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
@@ -440,29 +493,60 @@ fun PantallaRegistro(onRegistroCompletado: () -> Unit, onCancelar: () -> Unit) {
             onValueChange = { password = it },
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
         Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Username") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Username") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
         Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(value = direccion, onValueChange = { direccion = it }, label = { Text("Dirección") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+        Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(value = direccion, onValueChange = { direccion = it }, label = { Text("Dirección") }, modifier = Modifier.fillMaxWidth())
-
-        Spacer(modifier = Modifier.height(24.dp))
+        androidx.compose.animation.AnimatedVisibility(visible = mensajeError.isNotEmpty()) {
+            Text(
+                text = mensajeError,
+                color = Color.Red,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             OutlinedButton(
                 onClick = onCancelar,
                 modifier = Modifier.weight(1f),
-                // Borde del botón cancelar en rosado para que se vea
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
             ) {
                 Text("Cancelar", color = MaterialTheme.colorScheme.primary)
             }
 
             Button(
-                onClick = { onRegistroCompletado() },
+                onClick = {
+
+                    if (rut.isBlank() || nombre.isBlank() || correo.isBlank() || password.isBlank()) {
+                        mensajeError = "Faltan datos obligatorios"
+                        return@Button
+                    }
+
+                    if (!rut.contains("-")) {
+                        mensajeError = "El RUT debe tener guión (11111111-1)"
+                        return@Button
+                    }
+
+
+                    if (!correo.contains("@")) {
+                        mensajeError = "Correo inválido"
+                        return@Button
+                    }
+
+                    if (password.length < 6) {
+                        mensajeError = "Contraseña corta (min 6)"
+                        return@Button
+                    }
+
+                    mensajeError = ""
+                    onRegistroCompletado()
+                },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
