@@ -2,13 +2,21 @@ package com.tuempresa.Vanta.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val PrimaryDark = Color(0xFF80D8FF)
-val SecondaryDark = Color(0xFF00B0FF)
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
 
-val Dark401 = PrimaryDark
-val PurpleGrey40 = Color(0xFF625b71)
+val VantaBlack = Color(0xFF050505)
+val VantaSurface = Color(0xFF1E1E1E)
+val VantaPink = Color(0xFFFF007F)
+val VantaPinkLight = Color(0xFFFF80AB)
 
-val Dark40 = SecondaryDark
+val WhiteText = Color(0xFFFFFFFF)
+
+val PrimaryColor = VantaPink
+val SecondaryColor = VantaPinkLight
+
+val Purple80 = VantaPink
+val PurpleGrey80 = VantaSurface
+val Pink80 = VantaPinkLight
+
+val Purple40 = VantaPink
+val PurpleGrey40 = VantaSurface
+val Pink40 = VantaPinkLight
