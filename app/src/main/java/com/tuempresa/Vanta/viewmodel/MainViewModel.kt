@@ -29,6 +29,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         Ropa(3, "Polera Vanta", 15000.0, 20, "M", "Algodón"),
         Ropa(4, "Jeans Básicos", 29990.0, 8, "42", "Mezclilla")
     )
+    var textoBusqueda = MutableStateFlow("")
+
+    fun actualizarBusqueda(nuevoTexto: String) {
+        textoBusqueda.value = nuevoTexto
+    }
+
+    fun obtenerProductosFiltrados(): List<Producto> {
+        val texto = textoBusqueda.value
+        return if (texto.isEmpty()) {
+            listaProductos
+        } else {
+            listaProductos.filter {
+                it.nombre.contains(texto, ignoreCase = true)
+            }
+        }
+    }
 
     fun comprarProducto(producto: Producto) {
 
@@ -59,7 +75,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Bluetooth
     private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
     private val _bluetoothDevices = MutableStateFlow<List<BluetoothDevice>>(emptyList())
     val bluetoothDevices: StateFlow<List<BluetoothDevice>> = _bluetoothDevices

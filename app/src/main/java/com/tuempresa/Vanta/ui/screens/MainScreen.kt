@@ -1,6 +1,5 @@
 package com.tuempresa.Vanta.ui.screens
 
-
 import com.tuempresa.Vanta.R
 import android.Manifest
 import android.content.Context
@@ -15,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Search // <--- IMPORTANTE: Para el ícono de lupa
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,7 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.tuempresa.Vanta.viewmodel.MainViewModel
 import com.tuempresa.Vanta.ui.componentes.CameraPreview
-
+import com.tuempresa.Vanta.model.*
 
 fun getBluetoothConnectPermission(): String {
     return try {
@@ -69,7 +69,6 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
             CenterAlignedTopAppBar(
                 title = { Text("Vanta") },
                 actions = {
-
                     Image(
                         painter = painterResource(id = com.tuempresa.Vanta.R.drawable.logo),
                         contentDescription = "Logo App",
@@ -82,7 +81,6 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                 }
             )
         },
-
         bottomBar = {
             NavigationBar {
                 categorias.forEachIndexed { index, texto ->
@@ -94,7 +92,7 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                             when (index) {
                                 0 -> Icon(Icons.Default.ShoppingCart, contentDescription = null)
                                 1 -> Icon(Icons.Default.List, contentDescription = null)
-                                2 -> Icon(Icons.Default.Home, contentDescription = null) // Aquí pondremos los sensores
+                                2 -> Icon(Icons.Default.Home, contentDescription = null)
                                 3 -> Icon(Icons.Default.AccountCircle, contentDescription = null)
                             }
                         }
@@ -107,9 +105,12 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
         Box(modifier = Modifier.padding(innerPadding)) {
 
             when (selectedItemIndex) {
-
                 0 -> {
-                    val listaProductos = viewModel.listaProductos
+                    val textoBusqueda by viewModel.textoBusqueda.collectAsState()
+                    val productosVisibles = viewModel.obtenerProductosFiltrados()
+
+                    var mostrarDetalle by remember { mutableStateOf(false) }
+                    var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
 
                     Column(
                         modifier = Modifier
@@ -119,17 +120,33 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         Text(
                             "Catálogo Vanta",
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(bottom = 16.dp)
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = textoBusqueda,
+                            onValueChange = { viewModel.actualizarBusqueda(it) },
+                            label = { Text("Buscar producto...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(listaProductos) { producto ->
+                            items(productosVisibles) { producto ->
                                 Card(
                                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = {
+                                        productoSeleccionado = producto
+                                        mostrarDetalle = true
+                                    }
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Row(
@@ -152,24 +169,47 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                                             text = producto.mostrarDetalles(),
                                             style = MaterialTheme.typography.bodyMedium
                                         )
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-
-                                        Button(
-                                            onClick = { viewModel.comprarProducto(producto) },
-                                            modifier = Modifier.align(Alignment.End)
-                                        ) {
-                                            Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(16.dp))
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Agregar")
-                                        }
                                     }
                                 }
                             }
                         }
                     }
+
+                    if (mostrarDetalle && productoSeleccionado != null) {
+                        AlertDialog(
+                            onDismissRequest = { mostrarDetalle = false },
+                            title = { Text(productoSeleccionado!!.nombre) },
+                            text = {
+                                Column {
+                                    Text("Precio: $${productoSeleccionado!!.precio.toInt()}")
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Descripción: ${productoSeleccionado!!.mostrarDetalles()}")
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    Text(
+                                        text = "Stock Disponible: ${productoSeleccionado!!.cantidad} unidades",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                Button(onClick = {
+                                    viewModel.comprarProducto(productoSeleccionado!!)
+                                    mostrarDetalle = false
+                                }) {
+                                    Text("Agregar al Carrito")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { mostrarDetalle = false }) {
+                                    Text("Cerrar")
+                                }
+                            }
+                        )
+                    }
                 }
 
+                // --- CASO 2: SENSORES ---
                 2 -> {
                     LazyColumn(
                         modifier = Modifier
@@ -239,8 +279,9 @@ fun MainScreen(viewModel: MainViewModel = viewModel()) {
                         }
                     }
                 }
-                3 -> {
 
+                // --- CASO 3: PERFIL ---
+                3 -> {
                     val rolActual by viewModel.tipoUsuarioActual.collectAsState()
 
                     Column(
